@@ -1,23 +1,37 @@
-import os, json, gspread
-from oauth2client.service_account import ServiceAccountCredentials
+import os
+import json
+import gspread
+import pandas as pd
+import numpy as np
+from google.oauth2.service_account import Credentials
 
 def main():
     try:
-        # 1. الاتصال بجوجل
-        scopes = ["https://google.com", "https://googleapis.com"]
-        creds_dict = json.loads(os.environ.get('GOOGLE_CREDS'))
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scopes)
+        # 1. إعداد الاتصال (يجب أن تكون هذه الأسطر مزاحة للداخل)
+        scopes = ["https://googleapis.com", "https://googleapis.com"]
+        creds_json = os.environ.get('GOOGLE_CREDS')
+        
+        if not creds_json:
+            print("❌ خطأ: لم يتم العثور على GOOGLE_CREDS")
+            return
+
+        creds_dict = json.loads(creds_json)
+        creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
         client = gspread.authorize(creds)
 
-        # 2. فتح الجدول وتحديثه
+        # 2. فتح الجدول ورفع البيانات
         sh = client.open("Construction_Pricing_Dashboard").get_worksheet(0)
+        
+        # إنشاء بيانات تجريبية للتأكد من العمل
+        df = pd.DataFrame({'ID': [1, 2], 'Status': ['Success', 'Active']})
+        data_to_upload = [df.columns.values.tolist()] + df.values.tolist()
+        
         sh.clear()
-        # كتابة سطر تجريبي للتأكد من الاتصال
-        sh.update('A1', [['✅ نجاح! النظام يعمل بنجاح']])
-        print("✅ تم تحديث الجدول بنجاح!")
+        sh.update('A1', data_to_upload)
+        print("✅ تم التحديث بنجاح!")
+
     except Exception as e:
-        print(f"❌ الخطأ هو: {e}")
-        raise e
+        print(f"❌ حدث خطأ: {e}")
 
 if __name__ == "__main__":
     main()
